@@ -1,4 +1,5 @@
 run/
+env/
 resource/logs/
 resource/storage/
 .idea/

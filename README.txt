@@ -5,7 +5,11 @@ env -- env
 src -- django root
 
 
-to restore pip library
+setup environments
+    goto root level
+    python3 -m venv env
+    source env/bin/activate
+    pip install --upgrade pip
     pip install -r /path/to/requirements.txt
 
 DB setup for site
