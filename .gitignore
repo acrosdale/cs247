@@ -2,12 +2,12 @@ run/
 env/
 resource/logs/
 resource/storage/
-.idea/
+*.idea/
 *.env
 *.pyc
 *.pyo
 *.egg-info
-.DS_Store
-.sqlite
-.coverage
+*.DS_Store
+*.sqlite3
+*.coverage
 *.pytest_cache
