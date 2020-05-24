@@ -1,239 +1,199 @@
-# from . import *
-# def login(request):
-#     if request.user.is_authenticated:
-#         return redirect('home')
-#
-#     if request.POST:
-#         form = LoginForm(request.POST)
-#         if form.is_valid():
-#             cred = form.cleaned_data
-#             username = cred['username']
-#             password = cred['password']
-#             user = auth.authenticate(request, username=username, password=password)
-#             if user is not None:
-#                 auth.login(request, user)
-#                 return redirect('home')
-#             else:
-#                 messages.error(request, 'Username or Password maybe incorrect. Try again')
-#     return render(request, 'account/login.html')
-#
-#
-# def logout(request):
-#     auth.logout(request)
-#     return redirect('login')
-#
-#
-# def home(request):
-#     if request.user.is_authenticated:
-#         return render(request, 'account/home.html')
-#     return redirect('login')
-#
-#
-# def sign_up(request):
-#     if request.POST:
-#         form = SignUpForm(request.POST)
-#
-#         if form.is_valid():
-#             user_info = form.cleaned_data
-#             username = user_info['username']
-#             email = user_info['email']
-#             password = user_info['password']
-#             first_name = user_info['first_name']
-#             last_name = user_info['last_name']
-#             phone_number = user_info['phone_number']
-#             age = user_info['age']
-#
-#             # validate email
-#             if not validate_email(email):
-#                 messages.error(request, 'This email is not valid')
-#                 return redirect('sign_up')
-#
-#             # save the user info
-#             if not (User.objects.filter(username=username).exists() or User.objects.filter(email='email').exists()):
-#                 # create user and account
-#                 user = User.objects.create_user(username=username, password=password, first_name=first_name,
-#                                                 last_name=last_name, email=email)
-#                 user.save()
-#                 account = Account.objects.create(user=user, age=age, phone_number=phone_number)
-#
-#                 # log them in
-#                 cred = auth.authenticate(request, username=username, password=password)
-#                 auth.login(request, cred)
-#
-#                 return redirect('home')
-#             else:
-#                 messages.error(request, 'Looks like this username or email already exists')
-#
-#
-#     return render(request, 'account/sign_up.html')
-#
-#
-# # def get_client_ip(request):
-# #     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-# #     if x_forwarded_for:
-# #         ip = x_forwarded_for.split(',')[0]
-# #     else:
-# #         ip = request.META.get('REMOTE_ADDR')
-# #     return ip
-#
-#
-# # class FileProcessor(object):
-# # 	def process(file_path):
-# # 		import os
-# # 		import csv
-# # 		lines = []
-# # 		if os.path.isfile(file_path):
-# # 			with open(file_path) as f_in:
-# # 				reader = csv.reader(f_in)
-# # 				for row in reader:
-# # 					lines.append(row)
-# #
-# # 		if lines:
-# # 			with open('/tmp/foo.txt', 'w') as f_out:
-# # 				for line in lines:
-# # 					f_out.write("%s\n" % lines)
-# #
-# # 		return
-#
-#
-# # def upload(request):
-# #
-# #     # any row that throws an error WILL BE SKIP PERIOD
-# #
-# #     if request.POST and request.FILES:
-# #         csv_file = request.FILES['file']
-# #         if not str(csv_file.name).endswith('.csv'):
-# #             messages.error(request, 'File must be CSV')
-# #             return redirect('upload')
-# #
-# #         # restrict upload if account is inactive
-# #         if not request.user.account.active:
-# #             messages.error(request, 'You are not allow to upload file. Contact support to update your account')
-# #             return render(request, 'account/upload.html')
-# #
-# #         duplicates = CallerId.objects.filter(account=request.user.account)
-# #
-# #         csv_line = csv_file.readline().decode('ISO-8859-1')
-# #         while csv_line:
-# #             line = csv_line.strip().split(',')
-# #             data = dict()
-# #             try:
-# #                 #sanitize remove non ascii
-# #                 data['phone_number'] = int(clean_number(line[0]))
-# #                 data['label'] = line[1].strip().encode('ascii',errors='ignore').decode()
-# #                 data['account'] = request.user.account.id
-# #             except:
-# #                 csv_line = csv_file.readline().decode('ISO-8859-1')
-# #                 continue
-# #
-# #             dup_checked = duplicates.filter(phone_number=data['phone_number']).first()
-# #             if dup_checked:
-# #                 # if cid exist whether 'delete' or not we update it stat and show
-# #                 #reputation_obj = CallerIdReputation.objects.filter(caller_id=dup_checked).first()
-# #                 dup_checked.deleted = False
-# #                 dup_checked.date_modified = django_timezone.now()
-# #                 dup_checked.label = data['label']
-# #                 #if reputation_obj:
-# #                 #	reputation_obj.date_modified = django_timezone.now()
-# #                 #	reputation_obj.save()
-# #                 dup_checked.save()
-# #                 # update the reputation
-# #                 generate_reputation_obj(dup_checked, request.user.account)
-# #             else:
-# #                 try:
-# #                     form = UploadForm(data)
-# #                     if form.is_valid():
-# #                         obj = form.save()
-# #                         generate_reputation_obj(obj, request.user.account)
-# #                 except:
-# #                     pass
-# #
-# #             csv_line = csv_file.readline().decode('ISO-8859-1')
-# #         return redirect('home')
-# #
-# #
-# #     #
-# #     # 	# # todo start carrot task here comment out blow
-# #     # 	# worker = Worker(name=csv_file.name)
-# #     # 	# worker.description = 'Used for processig callerid from csv upload'
-# #     # 	# worker.save()
-# #     # 		#Task.objects.create(kallable='src.account.utils.CSVParser.caller_id_upload', args=[request])
-# #     #
-# #     #
-# #     # 	file_path = '/tmp/upload.txt'
-# #     #
-# #     # 	with open(file_path, 'wb') as f_out:
-# #     # 		for chunk in csv_file.chunks():
-# #     # 			f_out.write(chunk)
-# #     #
-# #     # 	Task.objects.create(kallable='account.views.FileProcessor.process', args=[file_path])
-# #     #
-# #
-# #     if request.POST and not request.FILES:
-# #         # restrict upload if account is inactive
-# #         if not request.user.account.active:
-# #             messages.error(request, 'You are not allow to upload file. Contact support to update your account')
-# #             return render(request, 'account/upload.html')
-# #
-# #         phone_numbers = request.POST.get('phone_numbers', None)
-# #         labels = request.POST.get('labels', None)
-# #
-# #         if labels is None or phone_numbers is None:
-# #             return render(request, 'account/upload.html')
-# #
-# #         phone_numbers = str(phone_numbers).split(',')
-# #         labels = str(labels).split(',')
-# #
-# #         if len(phone_numbers) != len(labels):
-# #             return render(request, 'account/upload.html')
-# #
-# #         duplicates = CallerId.objects.filter(account=request.user.account)
-# #         for i in range(len(phone_numbers)):
-# #             data = dict()
-# #
-# #             try:
-# #                 #sanitize remove non ascii
-# #                 data['phone_number'] = int(clean_number(phone_numbers[i]))
-# #                 data['label'] = labels[i].strip().encode('ascii',errors='ignore').decode()
-# #                 data['account'] = request.user.account.id
-# #             except:
-# #                 continue
-# #
-# #             dup_checked = duplicates.filter(phone_number=data['phone_number']).first()
-# #
-# #             if dup_checked:
-# #                 # if cid exist whether 'delete' or not we update it stat and show
-# #                 #reputation_obj = CallerIdReputation.objects.filter(caller_id=dup_checked).first()
-# #                 dup_checked.deleted = False
-# #                 dup_checked.date_modified = django_timezone.now()
-# #                 dup_checked.label = data['label']
-# #                 #if reputation_obj:
-# #                 #	reputation_obj.date_modified = django_timezone.now()
-# #                 #	reputation_obj.save()
-# #                 dup_checked.save()
-# #                 # update the reputation
-# #                 generate_reputation_obj(dup_checked, request.user.account)
-# #             else:
-# #                 try:
-# #                     form = UploadForm(data)
-# #                     if form.is_valid():
-# #                         obj = form.save()
-# #                         generate_reputation_obj(obj, request.user.account)
-# #                 except:
-# #                     pass
-# #         return redirect('home')
-# #     # 	else:
-# #     # 		try:
-# #     # 			worker = Worker(name='manual upload')
-# #     # 			worker.description = 'Used for processig callerid from csv upload -%s' % request.user.account
-# #     # 			worker.save()
-# #     # 			Task.objects.create(kallable='account.utils.CSVParser.caller_id_upload2', args=[request,phone_numbers,labels],worker=worker)
-# #     # 		except:
-# #     # 			worker.delete()
-# #     # 			messages.error(request, 'ERROR uploading list')
-# #     #
-# #     #
-# #     #
-# #     return render(request, 'account/upload.html')
-# #
-#
+import hashlib
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from account.utils import XChainWeb
+from account.models import (
+    Wallet,
+    Currency,
+    known_h_func,
+    Transact,
+    Contract
+)
+
+
+class GenTest(APIView):
+
+    def get(self, request):
+
+        response = Response(data={})
+        nodes = ['A', 'B', 'C']
+        edges = [('A', 'C'), ('B', 'C'), ('B', 'A'), ('C', 'B')]
+        node_values = {
+            'A->C': (2, 'bit'),
+            'B->C': (1, 'bit'),
+            'B->A': (1, 'zcoin'),
+            'C->B': (2, 'ether')
+        }
+        secrets = {'A': b'secret1', 'B': b'secret2', 'C': b'secret3'}
+        hashes = {
+            'A': known_h_func(secrets['A']),
+            'B': known_h_func(secrets['B']),
+            'C': known_h_func(secrets['B'])
+        }
+
+        # create test wallets and add some test currency
+        for user in ['A', 'B', 'C']:
+            currency1 = Currency(amount=10, type='bit')
+            currency2 = Currency(amount=10, type='ether')
+            currency3 = Currency(amount=10, type='zcoin')
+
+            currency1.save()
+            currency2.save()
+            currency3.save()
+
+            wallet = Wallet(username=user)
+            wallet.save()
+            wallet.currencies.add(currency3, currency1, currency2)
+
+        xc = XChainWeb(nodes=nodes, edges=edges, node_values=node_values, hashes=hashes, tranform_graph=True)
+        xc.build_xchain_data()
+        xc.build_xchain_contracts()
+
+        # deploy contract
+        # for contract in Contract.objects.all():
+        #     contract.deploy(contract.senderP)
+
+        response.data['msg'] = 'test data generated'
+        return response
+
+
+class TransactDetails(APIView):
+
+    def get(self, request, transact_id):
+        response = Response(data={})
+
+        transact = Transact.objects.filter(id=transact_id).first()
+        committed = True
+
+        if transact:
+            response.data['transact-id'] = transact_id
+            response.data['committed'] = committed
+            response.data['contracts_count'] = 0
+            response.data['contracts'] = list()
+
+            for contract in transact.contracts.all():
+
+                if not contract.escrow.paid:
+                    committed = False
+
+                response.data['contracts'].append({
+                    'id': contract.id,
+                    'deployed': contract.published,
+                    'claim': contract.escrow.paid,
+                    'sender': contract.senderP,
+                    'reciever': contract.receiverP,
+                    'init_time': contract.init_time,
+                    'escrow': {
+                        'value': contract.escrow.amount,
+                        'type': contract.escrow.type
+                    },
+                    'hashes': contract.hashes.all().values_list("hash", flat=True),
+                    'secrets': contract.secrets.all().values_list("secret", flat=True)
+                })
+                response.data['contracts_count'] += 1
+
+        response.data['committed'] = committed
+        return response
+
+
+class PublishedContract(APIView):
+
+    def get(self, request, user_id, contract_id):
+        response = Response(data={})
+        status = "not deployed"
+
+        if user_id and contract_id:
+            contract = Contract.objects.filter(senderP=user_id, id=contract_id).first()
+
+            if contract and contract.deploy(user_id):
+                status = 'deployed'
+
+        response.data['msg'] = {
+            'contract': contract_id,
+            'status': status
+        }
+
+        return response
+
+
+
+class RedeemContracts(APIView):
+
+    """
+        {
+            "secret":"secret2",
+            "receiver":3,
+            "is_pseudo_sink" : 1
+        }
+    """
+
+    def post(self, request):
+
+        response = Response(data={})
+        secret = request.data.get('secret', None)
+        receiver = request.data.get('receiver', None)
+        # this var is for when the rep sink gives secret to psuedo sink directly
+        is_pseudo_sink = request.data.get('is_pseudo_sink', None)
+
+        ret_dict = dict()
+
+        if secret and receiver:
+            contracts = Contract.objects.filter(receiverP=receiver)
+            sig = known_h_func(secret.encode())
+            secret = secret.encode()
+
+            for contract in contracts:
+
+                if is_pseudo_sink:
+                    print('redeeming_i')
+                    ret = contract.redeem_i(secret=secret, receiver=receiver)
+                    ret_dict[contract.id] = ret
+                else:
+                    print('redeeming_path')
+                    ret = contract.redeem_path(secret=secret, sig=sig, receiver=receiver)
+                    ret_dict[contract.id] = ret
+
+        response.data['contracts'] = ret_dict
+        return response
+
+
+class ClaimContracts(APIView):
+
+    def get(self, request, user_id, contract_id):
+        response = Response(data={})
+        status = "not claimed"
+
+        if user_id and contract_id:
+            contract = Contract.objects.filter(receiverP=user_id, id=contract_id).first()
+
+            if contract and contract.claim(user_id):
+                status = 'claimed'
+
+        response.data['msg'] = {
+            'contract': contract_id,
+            'status': status
+        }
+
+        return response
+
+
+class RefundContracts(APIView):
+
+    def get(self, request, user_id, contract_id):
+        response = Response(data={})
+        status = "not refund"
+
+        if user_id and contract_id:
+            contract = Contract.objects.filter(senderP=user_id, id=contract_id).first()
+
+            if contract and contract.refund(user_id):
+                status = 'refund'
+
+        response.data['msg'] = {
+            'contract': contract_id,
+            'status': status
+        }
+
+        return response
+
+

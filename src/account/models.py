@@ -1,12 +1,24 @@
-from django.db import models
-from django.contrib.auth.models import User
-import uuid
+from django.db import models, transaction
+from django.utils import timezone
+from hashlib import blake2b
+from hmac import compare_digest
 
 ASSET_CHOICES = (
-    (1, "bitcoin"),
-    (2, "etherium"),
-    (3, 'z-coin')
+    (1, "bit"),
+    (2, "ether"),
+    (3, 'zcoin')
 )
+
+
+def known_h_func(secret):
+    _hash = blake2b(digest_size=64, key=secret)
+    _hash.update(b'this is a known value')
+    return _hash.hexdigest().encode('utf-8')
+
+
+def verify(secret, sig):
+    good_sig = known_h_func(secret)
+    return compare_digest(good_sig, sig)
 
 
 class Wallet(models.Model):
@@ -14,7 +26,7 @@ class Wallet(models.Model):
         This model will represent a wallet. A wallet will can multiple
         currency attached to it.
     """
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    username = models.CharField(max_length=25)
     currencies = models.ManyToManyField('Currency')
 
 
@@ -41,8 +53,15 @@ class Hash(models.Model):
     stores hashes of locked contract. the leader hashes
     """
     hash = models.CharField(max_length=256)
-    path_len = models.SmallIntegerField(default=1)
+    paths = models.ManyToManyField('Path')
     locked = models.BooleanField(default=True)
+    owner = models.CharField(max_length=25)
+
+
+class Path(models.Model):
+    src = models.CharField(max_length=25)
+    route_len = models.SmallIntegerField(default=1)
+    redeemed = models.BooleanField(default=False)
 
 
 class Secrets(models.Model):
@@ -64,38 +83,121 @@ class Contract(models.Model):
     """
     receiverP = models.IntegerField()
     senderP = models.IntegerField()
-    escrow = models.ForeignKey(Escrow, on_delete=models.DO_NOTHING)
+    escrow = models.OneToOneField(Escrow, on_delete=models.DO_NOTHING)
     hashes = models.ManyToManyField(Hash)
     secrets = models.ManyToManyField(Secrets)
     published = models.BooleanField(default=False)
-    date_init = models.DateTimeField(auto_now_add=True)
+    init_time = models.DateTimeField(auto_now_add=True)
     # the len of the entire graph
     diameter = models.SmallIntegerField()
-    # delta could be in 12 hr intervals
-    delta = models.IntegerField()
-
-    class Meta:
-        unique_together = ('receiverP', 'senderP',)
+    # delta could be in 1 hr intervals
+    delta = models.IntegerField(default=1)
 
     def deploy(self, owner):
-        if owner == self.senderP:
-            # activate contract
-            pass
+        if owner == self.senderP and not self.published:
+            # substract escrow amount from sender.wallet and pub contract
+            wallet = Wallet.objects.get(id=self.senderP)
+            currency = wallet.currencies.filter(type=self.escrow.type).first()
 
-    # sig is the secret in-coded by the secret
-    def redeem_path(self, secret, sig):
-        pass
+            if currency and currency.amount >= self.escrow.amount:
+                currency.amount -= self.escrow.amount
+                currency.save()
+                self.published = True
+                self.save()
+                return True
+        return False
 
-    def redeem_i(self, secret):
-        pass
+    def redeem_path(self, secret, sig, receiver):
+        # keep the list of path when called test is if one of th
+        # path to the leader is still good
+        _hash = self.hashes.filter(hash=known_h_func(secret).decode()).first()
+        now = timezone.now()
+        ret = False
 
-    def claim(self, sender):
-        assert isinstance(sender, User), 'expected a User obj'
+        if self.receiverP == receiver and verify(secret, sig) and _hash:
+            paths = _hash.paths.all()
+            # find a valid path
+            for path in paths:
+                path_time_in_hr = (self.diameter + path.route_len + 1) * self.delta
+                if now < (self.init_time + timezone.timedelta(hours=path_time_in_hr)):
+                    # the path is good and secret are valid
+                    # reveal secret on the contract
+                    _secret = Secrets(secret=secret.decode())
+                    _secret.save()
+                    self.secrets.add(_secret)
+                    _hash.locked = False
+                    _hash.save()
+                    ret = True
+                    break
+        return ret
+
+    def redeem_i(self, secret, receiver):
+        # keep the list of path when called test is if one of th
+        # path to the leader is still good
+        _hash = Hash.objects.get(hash=known_h_func(secret).decode())
+        now = timezone.now()
+        ret = False
+
+        if self.receiverP == receiver and _hash:
+
+            paths = _hash.paths.all()
+
+            # find a valid path
+            for path in paths:
+                path_time_in_hr = (self.diameter + path.route_len + 1) * self.delta
+                if now < (self.init_time + timezone.timedelta(hours=path_time_in_hr)):
+                    # the path is good and secret are valid
+                    # reveal secret on the contract
+                    _secret = Secrets(secret=secret.decode())
+                    _secret.save()
+                    self.secrets.add(_secret)
+                    _hash.locked = False
+                    _hash.save()
+                    ret = True
+                    break
+        return ret
+
+    def claim(self, receiver):
+
+        if self.receiverP == receiver:
+
+            all_unlocked = True
+            for h in self.hashes.all():
+                if h.locked:
+                    all_unlocked = False
+
+            if all_unlocked:
+                wallet = Wallet.objects.get(id=self.receiverP)
+                currency = wallet.currencies.get(type=self.escrow.type)
+                currency.amount += self.escrow.amount
+                currency.save()
+                self.escrow.paid = True
+                self.escrow.save()
+        else:
+            all_unlocked = False
+
+        return all_unlocked
 
     def refund(self, sender):
-        # can be refund if not all hashes are un-locked
-        assert isinstance(sender, User), 'expected a User obj'
+        ret = False
+        if self.senderP == sender and self.hashes.filter(locked=True).exists():
+            now = timezone.now()
+            max_len = 0
 
-    def release(self):
-        # if time < current time release contract
-        pass
+            for h in self.hashes.all():
+                _path = h.paths.all().order_by('-route_len')
+
+                if _path and max_len < _path[0].route_len:
+                    max_len = _path[0].route_len
+
+            path_time_in_hr = (self.diameter + max_len + 1) * self.delta
+
+            if now >= (self.init_time + timezone.timedelta(hours=path_time_in_hr)):
+                wallet = Wallet.objects.get(id=self.senderP)
+                currency = wallet.currencies.get(type=self.escrow.type)
+                currency.amount += self.escrow.amount
+                currency.save()
+                self.escrow.paid = True
+                self.escrow.save()
+                ret = True
+        return ret

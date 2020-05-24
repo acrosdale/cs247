@@ -13,12 +13,12 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DJANGO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_ROOT = os.path.dirname(DJANGO_ROOT)
-RUN_DIR = os.path.join(PROJECT_ROOT, 'run')
+RUN_DIR = os.path.join(BASE_DIR, 'run')
 STATIC_DIR = os.path.join(RUN_DIR, 'static')
-RESOURCES_DIR = os.path.join(PROJECT_ROOT, 'resources')
+RESOURCES_DIR = os.path.join(BASE_DIR, 'resources')
 STORAGE_DIR = os.path.join(RESOURCES_DIR, 'storage')
 
 
@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
     'account.apps.AccountConfig'
 ]
 

@@ -1,12 +1,21 @@
-# from django.conf.urls import url,include
-# from django.contrib import admin
-# from account import views
-#
-# urlpatterns = [
-#     url(r'^$', views.login, name='login_home'),
-#     url(r'^login/$', views.login, name='login'),
-#     url(r'^logout/$', views.logout,name='logout'),
-#     url(r'^home/$', views.home, name='home'),
-#     url(r'^sign_up/$', views.sign_up, name='sign_up'),
-#     # url(r'^upload/$', views.upload, name='upload'),
-# ]
+from django.urls import path, include
+from django.contrib import admin
+from account.views import (
+    GenTest,
+    TransactDetails,
+    PublishedContract,
+    RedeemContracts,
+    ClaimContracts,
+    RefundContracts
+)
+
+urlpatterns = [
+    path(r'test/', GenTest.as_view()),
+    path(r'transact/details/<int:transact_id>/', TransactDetails.as_view()),
+    # contract function
+    path(r'contracts/redeem/', RedeemContracts.as_view()),
+    path(r'contract/claim/<int:user_id>/<int:contract_id>/', ClaimContracts.as_view()),
+    path(r'contract/refund/<int:user_id>/<int:contract_id>/', RefundContracts.as_view()),
+    path(r'contract/deploy/<int:user_id>/<int:contract_id>/', PublishedContract.as_view()),
+
+]
