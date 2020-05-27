@@ -48,7 +48,7 @@ class TransactManager(object):
                 print('hashes created')
                 self.create_paths_objs(followers_paths, leaders)
                 print('created paths')
-                self.create_contract_objs(transformed_edges, node_value, _diameter)
+                self.create_contract_objs(transformed_edges, node_value, _diameter,leaders)
                 print('created contracts!!!!!')
                 contracts_transact = Transact()
                 contracts_transact.save()
@@ -91,7 +91,7 @@ class TransactManager(object):
             # find owner hash obj and add all paths of all followers
             self.hash_objs_dict[owner].paths.add(*path_objs)
 
-    def create_contract_objs(self, transformed_edges: list, node_value: dict, _diameter:int):
+    def create_contract_objs(self, transformed_edges: list, node_value: dict, _diameter:int,leaders: set):
         assert len(transformed_edges)
         assert len(node_value)
         assert _diameter > 1
@@ -106,12 +106,22 @@ class TransactManager(object):
                 escrow = Escrow(amount=value, type=value_type)
                 escrow.save()
 
-                contract = Contract(
-                    senderP=Wallet.objects.get(username=edges[0]).id,
-                    receiverP=Wallet.objects.get(username=edges[1]).id,
-                    diameter=_diameter,
-                    escrow=escrow
-                )
+                if edges[0] not in leaders:
+                    contract = Contract(
+                        senderP=Wallet.objects.get(username=edges[0]).id,
+                        receiverP=Wallet.objects.get(username=edges[1]).id,
+                        diameter=_diameter,
+                        escrow=escrow
+                    )
+                else:
+                    # gives leader the 2*delta ie twice the time
+                    contract = Contract(
+                        senderP=Wallet.objects.get(username=edges[0]).id,
+                        receiverP=Wallet.objects.get(username=edges[1]).id,
+                        diameter=_diameter,
+                        escrow=escrow,
+                        delta=2
+                    )
                 contract.save()
                 contract.hashes.add(*self.hash_objs_dict.values())
                 self.contract_objs.append(contract)
