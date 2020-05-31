@@ -30,7 +30,7 @@ class TransactManager(object):
         self.contract_objs = list()
 
     def transact_contracts(self, followers_paths: dict, leaders: set, transformed_edges: list,
-                           node_value: dict, hashes: dict, _diameter: int):
+                           node_value: dict, hashes: dict, _diameter: int,rep_sinks,rep_srcs,followers,fvs):
         """
             follower_path: all possible path from followers to each leaders
             leaders: all leaders in the transformed graph
@@ -51,6 +51,12 @@ class TransactManager(object):
                 self.create_contract_objs(transformed_edges, node_value, _diameter,leaders)
                 print('created contracts!!!!!')
                 contracts_transact = Transact()
+                contracts_transact.leaders = str(list(leaders))
+                contracts_transact.rep_sinks = str(list(rep_sinks))
+                contracts_transact.rep_sources = str(list(rep_srcs))
+                contracts_transact.followers = str(list(followers))
+                contracts_transact.feedback_vs = str(list(fvs))
+                # contracts_transact.
                 contracts_transact.save()
                 print('created transaction')
                 contracts_transact.contracts.add(*self.contract_objs)
@@ -185,10 +191,12 @@ class XChainWeb(object):
 
     def build_xchain_contracts(self):
         self.contractor = TransactManager()
+        followers = set(self.nodes) - self.leaders
         self.transaction = self.contractor.transact_contracts(
             self.followers_paths, self.leaders,
             self.edges, self.node_value,
-            self.hashes, _diameter=diameter(self.create_graph('di'))
+            self.hashes, diameter(self.create_graph('di')),
+            self.rep_sinks, self.rep_srcs, followers, self.feedback_vertex_set
         )
 
     def create_graph(self, _type: str):

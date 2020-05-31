@@ -1,4 +1,4 @@
-import hashlib
+from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from account.utils import XChainWeb
@@ -69,6 +69,11 @@ class TransactDetails(APIView):
             response.data['transact-id'] = transact_id
             response.data['committed'] = committed
             response.data['contracts_count'] = 0
+            response.data['rep_sources'] = transact.rep_sources
+            response.data['rep_sinks'] = transact.rep_sinks
+            response.data['followers'] = transact.followers
+            response.data['leaders'] = transact.leaders
+            response.data['feedback_vs'] = transact.feedback_vs
             response.data['contracts'] = list()
 
             for contract in transact.contracts.all():
@@ -107,6 +112,9 @@ class PublishedContract(APIView):
 
             if contract and contract.deploy(user_id):
                 status = 'deployed'
+                # update contract time to now. contract is officailly deployed
+                contract.init_time = timezone.now()
+                contract.save()
 
         response.data['msg'] = {
             'contract': contract_id,
@@ -114,7 +122,6 @@ class PublishedContract(APIView):
         }
 
         return response
-
 
 
 class RedeemContracts(APIView):

@@ -9,7 +9,6 @@ ASSET_CHOICES = (
     (3, 'zcoin')
 )
 
-
 def known_h_func(secret):
     _hash = blake2b(digest_size=64, key=secret)
     _hash.update(b'this is a known value')
@@ -74,6 +73,11 @@ class Secrets(models.Model):
 class Transact(models.Model):
     contracts = models.ManyToManyField('Contract')
     committed = models.BooleanField(default=False)
+    rep_sources = models.TextField()
+    rep_sinks = models.TextField()
+    followers = models.TextField()
+    leaders = models.TextField()
+    feedback_vs = models.TextField()
 
 
 class Contract(models.Model):
